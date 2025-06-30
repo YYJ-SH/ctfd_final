@@ -5,15 +5,17 @@ networks:
     driver: bridge
 
 services:
-  # CTFd (80번 포트, 루트 경로)
+  # 간단한 CTFd (포트 직접 노출)
   ctfd:
     image: ctfd/ctfd:latest
     restart: always
+    ports:
+      - "8000:8000"  # 직접 포트 노출
     environment:
       - DATABASE_URL=mysql+pymysql://ctfd:ctfd@db/ctfd
       - REDIS_URL=redis://cache:6379
     volumes:
-      - ./ctfd-data:/var/uploads
+      - ./ctfd-data:/var/uploads  # 간단한 데이터 저장
     depends_on:
       - db
       - cache
@@ -41,7 +43,7 @@ services:
     networks:
       - ctf-network
 
-  # Traefik (모든 라우팅 담당)
+  # Traefik (웹 문제용)
   traefik:
     image: traefik:v3.0
     command:
@@ -50,34 +52,14 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
     ports:
-      - "80:80"      # 메인 포트
-      - "8080:8080"  # 관리용 대시보드
+      - "80:80"
+      - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - ctf-network
 
-  # CTFd 라우팅 (기본값, 최저 우선순위)
-  ctfd-proxy:
-    image: ctfd/ctfd:latest
-    restart: always
-    environment:
-      - DATABASE_URL=mysql+pymysql://ctfd:ctfd@db/ctfd
-      - REDIS_URL=redis://cache:6379
-    volumes:
-      - ./ctfd-data:/var/uploads
-    depends_on:
-      - db
-      - cache
-    networks:
-      - ctf-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ctfd.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.ctfd.priority=1"  # 가장 낮은 우선순위 (기본값)
-      - "traefik.http.services.ctfd.loadbalancer.server.port=8000"
-
-  # 웹 문제들 (높은 우선순위)
+  # 웹 문제들 (80번 포트)
   web-ann-day:
     build: ./challenges/ann_day
     networks:
@@ -85,7 +67,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.ann-day.rule=PathPrefix(`/ann-day`)"
-      - "traefik.http.routers.ann-day.priority=100"  # 높은 우선순위
+      - "traefik.http.routers.ann-day.priority=10"
       - "traefik.http.middlewares.ann-day-strip.stripprefix.prefixes=/ann-day"
       - "traefik.http.routers.ann-day.middlewares=ann-day-strip"
       - "traefik.http.services.ann-day.loadbalancer.server.port=5000"
@@ -97,7 +79,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.base64.rule=PathPrefix(`/base64`)"
-      - "traefik.http.routers.base64.priority=100"
+      - "traefik.http.routers.base64.priority=10"
       - "traefik.http.middlewares.base64-strip.stripprefix.prefixes=/base64"
       - "traefik.http.routers.base64.middlewares=base64-strip"
       - "traefik.http.services.base64.loadbalancer.server.port=5000"
@@ -109,7 +91,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.calculating-game.rule=PathPrefix(`/calculating-game`)"
-      - "traefik.http.routers.calculating-game.priority=100"
+      - "traefik.http.routers.calculating-game.priority=10"
       - "traefik.http.middlewares.calculating-game-strip.stripprefix.prefixes=/calculating-game"
       - "traefik.http.routers.calculating-game.middlewares=calculating-game-strip"
       - "traefik.http.services.calculating-game.loadbalancer.server.port=80"
@@ -121,7 +103,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.cookieadmin.rule=PathPrefix(`/cookieadmin`)"
-      - "traefik.http.routers.cookieadmin.priority=100"
+      - "traefik.http.routers.cookieadmin.priority=10"
       - "traefik.http.middlewares.cookieadmin-strip.stripprefix.prefixes=/cookieadmin"
       - "traefik.http.routers.cookieadmin.middlewares=cookieadmin-strip"
       - "traefik.http.services.cookieadmin.loadbalancer.server.port=5000"
@@ -133,7 +115,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.cookie-ctf.rule=PathPrefix(`/cookie-ctf`)"
-      - "traefik.http.routers.cookie-ctf.priority=100"
+      - "traefik.http.routers.cookie-ctf.priority=10"
       - "traefik.http.middlewares.cookie-ctf-strip.stripprefix.prefixes=/cookie-ctf"
       - "traefik.http.routers.cookie-ctf.middlewares=cookie-ctf-strip"
       - "traefik.http.services.cookie-ctf.loadbalancer.server.port=5000"
@@ -145,7 +127,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.crypto-hacker.rule=PathPrefix(`/crypto-hacker`)"
-      - "traefik.http.routers.crypto-hacker.priority=100"
+      - "traefik.http.routers.crypto-hacker.priority=10"
       - "traefik.http.middlewares.crypto-hacker-strip.stripprefix.prefixes=/crypto-hacker"
       - "traefik.http.routers.crypto-hacker.middlewares=crypto-hacker-strip"
       - "traefik.http.services.crypto-hacker.loadbalancer.server.port=5000"
@@ -157,7 +139,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.directory-trav.rule=PathPrefix(`/directory-trav`)"
-      - "traefik.http.routers.directory-trav.priority=100"
+      - "traefik.http.routers.directory-trav.priority=10"
       - "traefik.http.middlewares.directory-trav-strip.stripprefix.prefixes=/directory-trav"
       - "traefik.http.routers.directory-trav.middlewares=directory-trav-strip"
       - "traefik.http.services.directory-trav.loadbalancer.server.port=5000"
@@ -169,7 +151,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.hidden-images.rule=PathPrefix(`/hidden-images`)"
-      - "traefik.http.routers.hidden-images.priority=100"
+      - "traefik.http.routers.hidden-images.priority=10"
       - "traefik.http.middlewares.hidden-images-strip.stripprefix.prefixes=/hidden-images"
       - "traefik.http.routers.hidden-images.middlewares=hidden-images-strip"
       - "traefik.http.services.hidden-images.loadbalancer.server.port=5000"
@@ -181,7 +163,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mobile-only.rule=PathPrefix(`/mobile-only`)"
-      - "traefik.http.routers.mobile-only.priority=100"
+      - "traefik.http.routers.mobile-only.priority=10"
       - "traefik.http.middlewares.mobile-only-strip.stripprefix.prefixes=/mobile-only"
       - "traefik.http.routers.mobile-only.middlewares=mobile-only-strip"
       - "traefik.http.services.mobile-only.loadbalancer.server.port=5000"
@@ -193,7 +175,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.path-ctf.rule=PathPrefix(`/path-ctf`)"
-      - "traefik.http.routers.path-ctf.priority=100"
+      - "traefik.http.routers.path-ctf.priority=10"
       - "traefik.http.middlewares.path-ctf-strip.stripprefix.prefixes=/path-ctf"
       - "traefik.http.routers.path-ctf.middlewares=path-ctf-strip"
       - "traefik.http.services.path-ctf.loadbalancer.server.port=5000"
@@ -205,7 +187,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.regex-ctf.rule=PathPrefix(`/regex-ctf`)"
-      - "traefik.http.routers.regex-ctf.priority=100"
+      - "traefik.http.routers.regex-ctf.priority=10"
       - "traefik.http.middlewares.regex-ctf-strip.stripprefix.prefixes=/regex-ctf"
       - "traefik.http.routers.regex-ctf.middlewares=regex-ctf-strip"
       - "traefik.http.services.regex-ctf.loadbalancer.server.port=5000"
@@ -217,7 +199,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.why-so-many-click.rule=PathPrefix(`/why-so-many-click`)"
-      - "traefik.http.routers.why-so-many-click.priority=100"
+      - "traefik.http.routers.why-so-many-click.priority=10"
       - "traefik.http.middlewares.why-so-many-click-strip.stripprefix.prefixes=/why-so-many-click"
       - "traefik.http.routers.why-so-many-click.middlewares=why-so-many-click-strip"
       - "traefik.http.services.why-so-many-click.loadbalancer.server.port=5000"
@@ -232,7 +214,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dmcp-9001.rule=PathPrefix(`/dmcp-9001`)"
-      - "traefik.http.routers.dmcp-9001.priority=100"
+      - "traefik.http.routers.dmcp-9001.priority=10"
       - "traefik.http.middlewares.dmcp-9001-strip.stripprefix.prefixes=/dmcp-9001"
       - "traefik.http.routers.dmcp-9001.middlewares=dmcp-9001-strip"
       - "traefik.http.services.dmcp-9001.loadbalancer.server.port=9001"
@@ -246,7 +228,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dmcp-9002.rule=PathPrefix(`/dmcp-9002`)"
-      - "traefik.http.routers.dmcp-9002.priority=100"
+      - "traefik.http.routers.dmcp-9002.priority=10"
       - "traefik.http.middlewares.dmcp-9002-strip.stripprefix.prefixes=/dmcp-9002"
       - "traefik.http.routers.dmcp-9002.middlewares=dmcp-9002-strip"
       - "traefik.http.services.dmcp-9002.loadbalancer.server.port=9002"
@@ -260,7 +242,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dmcp-9006.rule=PathPrefix(`/dmcp-9006`)"
-      - "traefik.http.routers.dmcp-9006.priority=100"
+      - "traefik.http.routers.dmcp-9006.priority=10"
       - "traefik.http.middlewares.dmcp-9006-strip.stripprefix.prefixes=/dmcp-9006"
       - "traefik.http.routers.dmcp-9006.middlewares=dmcp-9006-strip"
       - "traefik.http.services.dmcp-9006.loadbalancer.server.port=9006"
@@ -274,7 +256,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dmcp-9007.rule=PathPrefix(`/dmcp-9007`)"
-      - "traefik.http.routers.dmcp-9007.priority=100"
+      - "traefik.http.routers.dmcp-9007.priority=10"
       - "traefik.http.middlewares.dmcp-9007-strip.stripprefix.prefixes=/dmcp-9007"
       - "traefik.http.routers.dmcp-9007.middlewares=dmcp-9007-strip"
       - "traefik.http.services.dmcp-9007.loadbalancer.server.port=9007"
