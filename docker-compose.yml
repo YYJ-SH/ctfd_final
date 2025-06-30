@@ -96,30 +96,7 @@ services:
     networks:
       - ctf-network
 
-  # 웹 문제들
-  web-ann-day:
-    build: ./challenges/ann_day
-    networks:
-      - ctf-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ann-day.rule=PathPrefix(`/ann-day`)"
-      - "traefik.http.routers.ann-day.priority=100"
-      - "traefik.http.middlewares.ann-day-strip.stripprefix.prefixes=/ann-day"
-      - "traefik.http.routers.ann-day.middlewares=ann-day-strip"
-      - "traefik.http.services.ann-day.loadbalancer.server.port=5000"
-
-  web-base64:
-    build: ./challenges/base64
-    networks:
-      - ctf-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.base64.rule=PathPrefix(`/base64`)"
-      - "traefik.http.routers.base64.priority=100"
-      - "traefik.http.middlewares.base64-strip.stripprefix.prefixes=/base64"
-      - "traefik.http.routers.base64.middlewares=base64-strip"
-      - "traefik.http.services.base64.loadbalancer.server.port=5000"
+  
 
   # 웹 문제들 (높은 우선순위)
   web-ann-day:
