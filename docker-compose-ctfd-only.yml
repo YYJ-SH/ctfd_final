@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  # CTFd만 단독 실행
+  ctfd:
+    build: ./CTFd
+    restart: always
+    ports:
+      - "80:8000"   # 80번 포트로 직접 서비스
+    volumes:
+      - ./ctfd-uploads:/var/uploads
+      - ./ctfd-logs:/var/log/CTFd
+    environment:
+      - SECRET_KEY=ctf_secret_key_2025

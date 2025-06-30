@@ -1,0 +1,100 @@
+version: '3.8'
+
+networks:
+  ctf-network:
+    driver: bridge
+
+services:
+  # CTFd (GitHub 클론 버전, 내장 DB 설정 사용)
+  ctfd:
+    build: ./CTFd  # CTFd GitHub 클론 폴더
+    restart: always
+    ports:
+      - "8000:8000"  # 직접 포트 노출
+    volumes:
+      - ./ctfd-uploads:/var/uploads
+      - ./ctfd-logs:/var/log/CTFd
+    networks:
+      - ctf-network
+    environment:
+      - SECRET_KEY=ctf_secret_key_2025
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ctfd.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.ctfd.priority=1"
+      - "traefik.http.services.ctfd.loadbalancer.server.port=8000"
+
+  # Traefik (라우팅만 담당)
+  traefik:
+    image: traefik:v3.0
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"      # 메인 포트
+      - "8080:8080"  # 관리용 대시보드
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - ctf-network
+
+  # 웹 문제들
+  web-ann-day:
+    build: ./challenges/ann_day
+    networks:
+      - ctf-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ann-day.rule=PathPrefix(`/ann-day`)"
+      - "traefik.http.routers.ann-day.priority=100"
+      - "traefik.http.middlewares.ann-day-strip.stripprefix.prefixes=/ann-day"
+      - "traefik.http.routers.ann-day.middlewares=ann-day-strip"
+      - "traefik.http.services.ann-day.loadbalancer.server.port=5000"
+
+  web-base64:
+    build: ./challenges/base64
+    networks:
+      - ctf-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.base64.rule=PathPrefix(`/base64`)"
+      - "traefik.http.routers.base64.priority=100"
+      - "traefik.http.middlewares.base64-strip.stripprefix.prefixes=/base64"
+      - "traefik.http.routers.base64.middlewares=base64-strip"
+      - "traefik.http.services.base64.loadbalancer.server.port=5000"
+
+  web-calculating-game:
+    build: ./challenges/calculating_game
+    networks:
+      - ctf-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.calculating-game.rule=PathPrefix(`/calculating-game`)"
+      - "traefik.http.routers.calculating-game.priority=100"
+      - "traefik.http.middlewares.calculating-game-strip.stripprefix.prefixes=/calculating-game"
+      - "traefik.http.routers.calculating-game.middlewares=calculating-game-strip"
+      - "traefik.http.services.calculating-game.loadbalancer.server.port=80"
+
+  # 나머지 웹 문제들 (필요한 것들만 추가)
+  web-cookieadmin:
+    build: ./challenges/cookieadmin
+    networks:
+      - ctf-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cookieadmin.rule=PathPrefix(`/cookieadmin`)"
+      - "traefik.http.routers.cookieadmin.priority=100"
+      - "traefik.http.middlewares.cookieadmin-strip.stripprefix.prefixes=/cookieadmin"
+      - "traefik.http.routers.cookieadmin.middlewares=cookieadmin-strip"
+      - "traefik.http.services.cookieadmin.loadbalancer.server.port=5000"
+
+  # DMCP (필요하면 추가)
+  # dmcp-9001:
+  #   build: ./damn-vulnerable-MCP-server
+  #   networks:
+  #     - ctf-network
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.dmcp-9001.rule=PathPrefix(`/dmcp-9001`)"

@@ -1,0 +1,106 @@
+version: '3.8'
+
+networks:
+  ctf-network:
+    driver: bridge
+
+services:
+  # 데이터베이스
+  db:
+    image: mariadb:10.4.12
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=ctfd
+      - MYSQL_USER=ctfd
+      - MYSQL_PASSWORD=ctfd
+      - MYSQL_DATABASE=ctfd
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+    networks:
+      - ctf-network
+
+  # Redis
+  cache:
+    image: redis:4
+    restart: always
+    networks:
+      - ctf-network
+
+  # Traefik (모든 라우팅 담당)
+  traefik:
+    image: traefik:v3.0
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"      # 메인 포트
+      - "8080:8080"  # 관리용 대시보드
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - ctf-network
+
+  # CTFd (GitHub 클론 버전)
+  ctfd:
+    build: ./CTFd  # GitHub에서 클론한 폴더
+    restart: always
+    environment:
+      - DATABASE_URL=mysql+pymysql://ctfd:ctfd@db/ctfd
+      - REDIS_URL=redis://cache:6379
+      - SECRET_KEY=ctf_secret_key_2025
+      - UPLOAD_FOLDER=/var/uploads
+    volumes:
+      - ./ctfd-uploads:/var/uploads
+      - ./ctfd-logs:/var/log/CTFd
+    depends_on:
+      - db
+      - cache
+    networks:
+      - ctf-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ctfd.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.ctfd.priority=1"
+      - "traefik.http.services.ctfd.loadbalancer.server.port=8000"
+
+  # 웹 문제들 (기존과 동일)
+  web-ann-day:
+    build: ./challenges/ann_day
+    networks:
+      - ctf-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ann-day.rule=PathPrefix(`/ann-day`)"
+      - "traefik.http.routers.ann-day.priority=100"
+      - "traefik.http.middlewares.ann-day-strip.stripprefix.prefixes=/ann-day"
+      - "traefik.http.routers.ann-day.middlewares=ann-day-strip"
+      - "traefik.http.services.ann-day.loadbalancer.server.port=5000"
+
+  web-base64:
+    build: ./challenges/base64
+    networks:
+      - ctf-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.base64.rule=PathPrefix(`/base64`)"
+      - "traefik.http.routers.base64.priority=100"
+      - "traefik.http.middlewares.base64-strip.stripprefix.prefixes=/base64"
+      - "traefik.http.routers.base64.middlewares=base64-strip"
+      - "traefik.http.services.base64.loadbalancer.server.port=5000"
+
+  web-calculating-game:
+    build: ./challenges/calculating_game
+    networks:
+      - ctf-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.calculating-game.rule=PathPrefix(`/calculating-game`)"
+      - "traefik.http.routers.calculating-game.priority=100"
+      - "traefik.http.middlewares.calculating-game-strip.stripprefix.prefixes=/calculating-game"
+      - "traefik.http.routers.calculating-game.middlewares=calculating-game-strip"
+      - "traefik.http.services.calculating-game.loadbalancer.server.port=80"
+
+  # 나머지 웹 문제들도 동일하게...
+  # (간단히 하기 위해 3개만 예시)
