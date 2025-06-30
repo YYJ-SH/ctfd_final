@@ -1,0 +1,30 @@
+services:
+  number-master:
+    build: .
+    container_name: ybg-number-master
+    ports:
+      - "10001:80"  # 포트 10001로 매핑
+    environment:
+      - APACHE_DOCUMENT_ROOT=/var/www/html
+      - APACHE_RUN_USER=www-data
+      - APACHE_RUN_GROUP=www-data
+    restart: always
+    
+    # 로그 설정
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # 헬스체크 추가
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/game.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# 영구 볼륨
+volumes:
+  app_logs:

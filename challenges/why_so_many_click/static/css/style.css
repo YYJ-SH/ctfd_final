@@ -1,0 +1,137 @@
+body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background-color: #f8f8f8;
+    color: #333;
+    margin: 0;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: #fff;
+    border-left: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
+    min-height: 100vh;
+}
+
+header {
+    padding: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+header h1 {
+    font-size: 16px;
+    font-weight: bold;
+    color: #c62917;
+    margin: 0;
+}
+
+main {
+    padding: 15px;
+}
+
+.board-title {
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.board-title h2 {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.post {
+    padding: 15px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.post-header .author-info {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.post-header .author-info .profile-pic {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.post-header .author-info span {
+    font-weight: bold;
+}
+
+
+.post-header h3 {
+    margin: 0 0 10px;
+    font-size: 1.1em;
+}
+
+.post-header .post-time {
+    font-size: 0.8em;
+    color: #888;
+    margin: 0;
+}
+
+.post-content {
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.post-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 0.9em;
+    color: #888;
+}
+
+.like-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 0;
+    gap: 5px;
+    color: #888;
+}
+
+.like-btn img {
+    width: 16px;
+    height: 16px;
+    filter: grayscale(1);
+    opacity: 0.7;
+    transition: all 0.2s ease;
+}
+
+.like-btn.liked img {
+    filter: none;
+    opacity: 1;
+}
+
+.comments {
+    padding-top: 10px;
+}
+
+.comment {
+    padding: 10px 0;
+    border-bottom: 1px solid #f2f2f2;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+.comment.reply {
+    margin-left: 20px;
+}
+
+.comment p {
+    margin: 0;
+} 
