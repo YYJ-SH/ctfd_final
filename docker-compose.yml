@@ -1,47 +1,86 @@
 version: '3.8'
 
 networks:
+  default:
+  internal:
+    internal: true
   ctf-network:
     driver: bridge
 
 services:
-  # CTFd (80번 포트, 루트 경로)
+  # CTFd (공식 설정 기반)
   ctfd:
-    image: ctfd/ctfd:latest
+    build: ./CTFd
+    user: root
     restart: always
+    ports:
+      - "8000:8000"
     environment:
+      - UPLOAD_FOLDER=/var/uploads
       - DATABASE_URL=mysql+pymysql://ctfd:ctfd@db/ctfd
       - REDIS_URL=redis://cache:6379
+      - WORKERS=1
+      - LOG_FOLDER=/var/log/CTFd
+      - ACCESS_LOG=-
+      - ERROR_LOG=-
+      - REVERSE_PROXY=true
+      - SECRET_KEY=ctf_secret_key_2025
     volumes:
-      - ./ctfd-data:/var/uploads
+      - ./.data/CTFd/logs:/var/log/CTFd
+      - ./.data/CTFd/uploads:/var/uploads
+      - ./CTFd:/opt/CTFd:ro
     depends_on:
       - db
       - cache
     networks:
+      - default
+      - internal
       - ctf-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ctfd.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.ctfd.priority=1"
+      - "traefik.http.services.ctfd.loadbalancer.server.port=8000"
 
-  # 데이터베이스
+  # Nginx (CTFd용)
+  nginx:
+    image: nginx:stable
+    restart: always
+    volumes:
+      - ./CTFd/conf/nginx/http.conf:/etc/nginx/nginx.conf
+    ports:
+      - 81:80  # 81번 포트로 변경 (80은 Traefik이 사용)
+    depends_on:
+      - ctfd
+    networks:
+      - default
+
+  # 데이터베이스 (CTFd 공식 설정)
   db:
-    image: mariadb:10.4.12
+    image: mariadb:10.11
     restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD=ctfd
-      - MYSQL_USER=ctfd
-      - MYSQL_PASSWORD=ctfd
-      - MYSQL_DATABASE=ctfd
+      - MARIADB_ROOT_PASSWORD=ctfd
+      - MARIADB_USER=ctfd
+      - MARIADB_PASSWORD=ctfd
+      - MARIADB_DATABASE=ctfd
+      - MARIADB_AUTO_UPGRADE=1
     volumes:
-      - ./mysql-data:/var/lib/mysql
+      - ./.data/mysql:/var/lib/mysql
     networks:
-      - ctf-network
+      - internal
+    command: [mysqld, --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci, --wait_timeout=28800, --log-warnings=0]
 
-  # Redis
+  # Redis (CTFd 공식 설정)
   cache:
     image: redis:4
     restart: always
+    volumes:
+      - ./.data/redis:/data
     networks:
-      - ctf-network
+      - internal
 
-  # Traefik (모든 라우팅 담당)
+  # Traefik (웹 문제들 라우팅)
   traefik:
     image: traefik:v3.0
     command:
@@ -50,32 +89,37 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
     ports:
-      - "80:80"      # 메인 포트
+      - "80:80"      # 메인 포트 (웹 문제들 + CTFd)
       - "8080:8080"  # 관리용 대시보드
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - ctf-network
 
-  # CTFd 라우팅 (기본값, 최저 우선순위)
-  ctfd-proxy:
-    image: ctfd/ctfd:latest
-    restart: always
-    environment:
-      - DATABASE_URL=mysql+pymysql://ctfd:ctfd@db/ctfd
-      - REDIS_URL=redis://cache:6379
-    volumes:
-      - ./ctfd-data:/var/uploads
-    depends_on:
-      - db
-      - cache
+  # 웹 문제들
+  web-ann-day:
+    build: ./challenges/ann_day
     networks:
       - ctf-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.ctfd.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.ctfd.priority=1"  # 가장 낮은 우선순위 (기본값)
-      - "traefik.http.services.ctfd.loadbalancer.server.port=8000"
+      - "traefik.http.routers.ann-day.rule=PathPrefix(`/ann-day`)"
+      - "traefik.http.routers.ann-day.priority=100"
+      - "traefik.http.middlewares.ann-day-strip.stripprefix.prefixes=/ann-day"
+      - "traefik.http.routers.ann-day.middlewares=ann-day-strip"
+      - "traefik.http.services.ann-day.loadbalancer.server.port=5000"
+
+  web-base64:
+    build: ./challenges/base64
+    networks:
+      - ctf-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.base64.rule=PathPrefix(`/base64`)"
+      - "traefik.http.routers.base64.priority=100"
+      - "traefik.http.middlewares.base64-strip.stripprefix.prefixes=/base64"
+      - "traefik.http.routers.base64.middlewares=base64-strip"
+      - "traefik.http.services.base64.loadbalancer.server.port=5000"
 
   # 웹 문제들 (높은 우선순위)
   web-ann-day:
@@ -138,17 +182,7 @@ services:
       - "traefik.http.routers.cookie-ctf.middlewares=cookie-ctf-strip"
       - "traefik.http.services.cookie-ctf.loadbalancer.server.port=5000"
 
-  web-crypto-hacker:
-    build: ./challenges/crypto-hacker
-    networks:
-      - ctf-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.crypto-hacker.rule=PathPrefix(`/crypto-hacker`)"
-      - "traefik.http.routers.crypto-hacker.priority=100"
-      - "traefik.http.middlewares.crypto-hacker-strip.stripprefix.prefixes=/crypto-hacker"
-      - "traefik.http.routers.crypto-hacker.middlewares=crypto-hacker-strip"
-      - "traefik.http.services.crypto-hacker.loadbalancer.server.port=5000"
+ 
 
   web-directory-trav:
     build: ./challenges/directory_trav
