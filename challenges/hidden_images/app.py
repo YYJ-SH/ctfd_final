@@ -1,23 +1,43 @@
-from flask import Flask, render_template
+import os
+from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
+
+import os
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.serving import WSGIRequestHandler
+
+# SCRIPT_NAME 환경변수 처리를 위한 미들웨어
+class ScriptNameMiddleware:
+    def __init__(self, app):
+        self.app = app
+    
+    def __call__(self, environ, start_response):
+        script_name = os.environ.get('SCRIPT_NAME', '')
+        if script_name:
+            environ['SCRIPT_NAME'] = script_name
+            path_info = environ.get('PATH_INFO', '')
+            if path_info.startswith(script_name):
+                environ['PATH_INFO'] = path_info[len(script_name):]
+        return self.app(environ, start_response)
+
 
 app = Flask(__name__)
 
-# 동아리 정보를 담은 딕셔너리
-club_info = {
-    'name': '융합, 보존, 공허.',
-    'description': '우리의 \'성장\'은 열정적인 \'구성원\'을 자양분 삼아, 이성의 경계를 넘어선 무언가로 변태하는 것을 의미합니다.',
-    'requirements': [
-        '스스로를 온전히 불사를 \'열정\'. 차가운 영혼은 \'그것\'의 부화에 방해만 될 뿐입니다.',
-        '매주 지정된 시간에 열리는 \'의식\'에 반드시 참여할 것. 불참은 곧 소멸을 의미합니다.',
-        '이해할 수 없는 문자와 도형을 해독하고, \'저편\'으로부터 오는 신호를 기록할 최소한의 능력.'
-    ],
-    'deadline': '2025년 8월 31일, 마지막 별이 제자리를 찾는 날. 이후 모든 문은 영원히 닫힙니다.',
-    'contact': '연락을 원한다면, 거울을 보고 당신의 이름을 세 번 속삭이십시오. 우리가 \'찾아갈\' 것입니다.'
-}
+# WSGI 미들웨어 적용
+app.wsgi_app = ScriptNameMiddleware(app.wsgi_app)
+
+# 프로덕션 환경에서 APPLICATION_ROOT 설정
+if os.environ.get('FLASK_ENV') == 'production':
+    app.config['APPLICATION_ROOT'] = '/challenges/hidden_images'
+    app.config['PREFERRED_URL_SCHEME'] = 'http'
+
+# 기존 코드 유지하면서 static 경로 수정
+@app.route('/static/<path:filename>')
+def custom_static(filename):
+    return send_from_directory(app.static_folder, filename)
 
 @app.route('/')
 def home():
     return render_template('index.html', club=club_info)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)

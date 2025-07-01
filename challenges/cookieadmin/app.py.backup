@@ -1,29 +1,7 @@
 import os
 from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
 
-import os
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from werkzeug.serving import WSGIRequestHandler
-
-# SCRIPT_NAME 환경변수 처리를 위한 미들웨어
-class ScriptNameMiddleware:
-    def __init__(self, app):
-        self.app = app
-    
-    def __call__(self, environ, start_response):
-        script_name = os.environ.get('SCRIPT_NAME', '')
-        if script_name:
-            environ['SCRIPT_NAME'] = script_name
-            path_info = environ.get('PATH_INFO', '')
-            if path_info.startswith(script_name):
-                environ['PATH_INFO'] = path_info[len(script_name):]
-        return self.app(environ, start_response)
-
-
 app = Flask(__name__)
-
-# WSGI 미들웨어 적용
-app.wsgi_app = ScriptNameMiddleware(app.wsgi_app)
 
 # 프로덕션 환경에서 APPLICATION_ROOT 설정
 if os.environ.get('FLASK_ENV') == 'production':

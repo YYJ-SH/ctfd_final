@@ -1,0 +1,21 @@
+import os
+from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
+
+app = Flask(__name__)
+
+# 프로덕션 환경에서 APPLICATION_ROOT 설정
+if os.environ.get('FLASK_ENV') == 'production':
+    app.config['APPLICATION_ROOT'] = '/challenges/base64'
+    app.config['PREFERRED_URL_SCHEME'] = 'http'
+
+# 기존 코드 유지하면서 static 경로 수정
+@app.route('/static/<path:filename>')
+def custom_static(filename):
+    return send_from_directory(app.static_folder, filename)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=5000, debug=False)

@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}YBG Secure Channel{% endblock %}
+
+{% block content %}
+<div class="py-8 px-4">
+    <div class="max-w-7xl mx-auto">
+        
+        <!-- 헤더 -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-green-400 font-mono mb-2">(주)융보공 연락 채널</h1>
+            <p class="text-green-500">Encrypted Communication Network</p>
+        </div>
+
+        <!-- 토큰 상태 -->
+        <div class="flex justify-center mb-8">
+            <div class="bg-black bg-opacity-60 border border-green-500 rounded-lg px-6 py-4">
+                <div class="flex items-center space-x-4">
+                    <span class="text-green-400 text-2xl">🍪</span>
+                    <div>
+                        <p class="text-green-600 text-sm">접속 토큰</p>
+                        <p class="text-green-400 text-xl font-mono" id="ticket-display">{{ ticket_count }}/3</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 경고 표시 -->
+        {% if warnings > 0 %}
+        <div class="max-w-2xl mx-auto mb-8">
+            <div class="bg-red-900 bg-opacity-60 border border-red-500 rounded-lg p-4">
+                <div class="flex items-center space-x-3">
+                    <span class="text-red-400 text-xl">⚠️</span>
+                    <p class="text-red-300">
+                        <strong>보안 경고:</strong> {{ warnings }}/3 - 비정상적인 접근이 감지되었습니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 네트워크 상태 -->
+        <div class="bg-black bg-opacity-60 border border-green-500 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-bold text-green-400 mb-4">접촉 가능 해커 현황</h2>
+            <div class="bg-gray-900 rounded-lg p-6 text-center">
+                <img src="static/image.png" alt="Network Nodes" 
+                     class="w-full max-w-md mx-auto rounded-lg mb-4 cursor-pointer hover:brightness-110 transition-all duration-200" 
+                     onclick="openModal()">
+                <p class="text-green-400">48개 노드 온라인</p>
+                <p class="text-green-600 text-sm mt-2">보안 채널 활성화됨 (클릭하여 확대)</p>
+            </div>
+        </div>
+
+        <!-- 해커 목록 -->
+        <div class="bg-black bg-opacity-60 border border-green-500 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-bold text-green-400 mb-6">👥 활성 해커 목록</h2>
+            <div class="grid grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                {% for name in names %}
+                <button onclick="selectName('{{ name }}')" 
+                        class="name-btn bg-gray-900 hover:bg-green-900 border border-gray-700 hover:border-green-500 rounded p-2 text-xs font-mono text-green-400 transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        data-name="{{ name }}">
+                    {{ name }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 메시지 전송 -->
+        <div class="bg-black bg-opacity-60 border border-green-500 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-bold text-green-400 mb-6">접촉하기</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-green-400 text-sm font-mono mb-2">타겟 해커:</label>
+                    <input type="text" id="selected-name" readonly 
+                           class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded text-green-400 font-mono focus:outline-none focus:border-green-500"
+                           placeholder="해커를 선택하세요">
+                </div>
+                <div>
+                    <label class="block text-green-400 text-sm font-mono mb-2">보낼 메시지:</label>
+                    <textarea id="message-input" rows="4" 
+                              class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded text-green-400 font-mono focus:outline-none focus:border-green-500 resize-none"
+                              placeholder="메시지를 입력하세요..."></textarea>
+                </div>
+                <button onclick="sendMessage()" 
+                        class="w-full bg-green-900 hover:bg-green-800 border border-green-500 text-green-400 font-mono py-3 px-4 rounded transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-green-500">
+                    요청 전송
+                </button>
+            </div>
+        </div>
+
+        <!-- 응답 영역 -->
+        <div id="response-area" class="hidden mb-8">
+            <div class="bg-green-900 bg-opacity-30 border border-green-500 rounded-lg p-4">
+                <div class="flex items-center space-x-3">
+                    <span class="text-green-400 text-xl">✅</span>
+                    <p class="text-green-300 font-mono" id="response-message"></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="error-area" class="hidden mb-8">
+            <div class="bg-red-900 bg-opacity-30 border border-red-500 rounded-lg p-4">
+                <div class="flex items-center space-x-3">
+                    <span class="text-red-400 text-xl">❌</span>
+                    <p class="text-red-300 font-mono" id="error-message"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 푸터 -->
+        <div class="text-center">
+            <p class="text-green-600 text-sm opacity-60 font-mono">
+                [Agent 유예지] All communications are encrypted and monitored
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- 이미지 모달 -->
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-80 hidden items-center justify-center z-50" onclick="closeModal()">
+    <div class="relative max-w-4xl max-h-[90vh] p-4">
+        <img src="static/image.png" alt="Network Nodes - Full Size" 
+             class="w-full h-full object-contain rounded-lg border-2 border-green-500">
+        <button onclick="closeModal()" 
+                class="absolute top-2 right-2 bg-red-900 hover:bg-red-800 border border-red-500 text-red-300 w-10 h-10 rounded-full flex items-center justify-center font-bold">
+            ✕
+        </button>
+        <div class="absolute bottom-2 left-2 bg-black bg-opacity-70 border border-green-500 rounded px-3 py-1">
+            <p class="text-green-400 text-sm font-mono">48개 해커 노드 - 상세 보기</p>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedName = '';
+
+function openModal() {
+    document.getElementById('imageModal').classList.remove('hidden');
+    document.getElementById('imageModal').classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    document.getElementById('imageModal').classList.add('hidden');
+    document.getElementById('imageModal').classList.remove('flex');
+    document.body.style.overflow = 'auto';
+}
+
+function selectName(name) {
+    selectedName = name;
+    document.getElementById('selected-name').value = name;
+    
+    // 버튼 스타일 업데이트
+    document.querySelectorAll('.name-btn').forEach(btn => {
+        btn.classList.remove('bg-green-900', 'border-green-500');
+        btn.classList.add('bg-gray-900', 'border-gray-700');
+    });
+    
+    const selectedBtn = document.querySelector(`[data-name="${name}"]`);
+    selectedBtn.classList.remove('bg-gray-900', 'border-gray-700');
+    selectedBtn.classList.add('bg-green-900', 'border-green-500');
+}
+
+function sendMessage() {
+    const message = document.getElementById('message-input').value;
+    
+    if (!selectedName) {
+        showError('타겟 해커를 선택해주세요.');
+        return;
+    }
+    
+    if (!message.trim()) {
+        showError('메시지를 입력해주세요.');
+        return;
+    }
+    
+    fetch('/agent-chat/send_message', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            name: selectedName,
+            message: message
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showResponse(data.message);
+            if (data.ticket_count !== undefined) {
+                document.getElementById('ticket-display').textContent = data.ticket_count + '/3';
+            }
+        } else {
+            showError(data.message);
+        }
+    })
+    .catch(error => {
+        showError('네트워크 오류: ' + error);
+    });
+}
+
+function showResponse(message) {
+    document.getElementById('response-message').textContent = message;
+    document.getElementById('response-area').classList.remove('hidden');
+    document.getElementById('error-area').classList.add('hidden');
+}
+
+function showError(message) {
+    document.getElementById('error-message').textContent = message;
+    document.getElementById('error-area').classList.remove('hidden');
+    document.getElementById('response-area').classList.add('hidden');
+}
+
+// 세션 스토리지 확인
+if (sessionStorage.getItem('warnings') === '3') {
+    showError('경고 3번이 초과되어 요청 전송이 차단되었습니다. 힌트 [3]번을 결제하시거나 스스로 문제를 해결하세요.');
+}
+</script>
+{% endblock %}

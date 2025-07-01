@@ -1,39 +1,57 @@
-import os
-from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
-
-import os
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from werkzeug.serving import WSGIRequestHandler
-
-# SCRIPT_NAME 환경변수 처리를 위한 미들웨어
-class ScriptNameMiddleware:
-    def __init__(self, app):
-        self.app = app
-    
-    def __call__(self, environ, start_response):
-        script_name = os.environ.get('SCRIPT_NAME', '')
-        if script_name:
-            environ['SCRIPT_NAME'] = script_name
-            path_info = environ.get('PATH_INFO', '')
-            if path_info.startswith(script_name):
-                environ['PATH_INFO'] = path_info[len(script_name):]
-        return self.app(environ, start_response)
-
+from flask import Flask, request, render_template_string
+import sqlite3, random
 
 app = Flask(__name__)
 
-# WSGI 미들웨어 적용
-app.wsgi_app = ScriptNameMiddleware(app.wsgi_app)
+# 플래그를 파일에서 읽어오기
+def read_flag_file(path, default="[**FLAG**]"):
+    try:
+        return open(path, 'r').read().strip()
+    except:
+        return default
 
-# 프로덕션 환경에서 APPLICATION_ROOT 설정
-if os.environ.get('FLASK_ENV') == 'production':
-    app.config['APPLICATION_ROOT'] = '/challenges/ann_day'
-    app.config['PREFERRED_URL_SCHEME'] = 'http'
+FLAG1 = read_flag_file('./flag.txt')
+FLAG2 = read_flag_file('./fake_flag_1.txt')
+FLAG3 = read_flag_file('./fake_flag_2.txt')
 
-# 기존 코드 유지하면서 static 경로 수정
-@app.route('/static/<path:filename>')
-def custom_static(filename):
-    return send_from_directory(app.static_folder, filename)
+CHARACTER_FLAGS = {
+    "엘싸": FLAG1,
+    "올랄프": FLAG2,
+    "쿠리수토푸": FLAG3,
+}
+
+CHARACTER_RESPONSES = {
+    "엘싸": [
+        "마법을 어떻게 쓰냐고? 그걸 알려주면 마법이 아니지~",
+        "마법은 마음으로 느끼는 거야.",
+        "차가운 얼음보다 차가운 진실을 원해?"
+    ],
+    "올랄프": [
+        "사랑? 눈사람도 사랑받고 싶어~",
+        "사랑은 따뜻한 핫초코 같은 거야!",
+        "사랑이 뭔지는 모르지만 눈이 좋아!"
+    ],
+    "쿠리수토푸": [
+        "트롤은 오늘도 트롤링 중~",
+        "트롤은 계획이 다 있지!",
+        "누구보다 장난을 잘 치는 게 바로 트롤!"
+    ]
+}
+
+# SQLite 쿼리 실행
+def run_query(query):
+    print(f"[DEBUG] Executing query: {query}")
+    try:
+        conn = sqlite3.connect('database.db')
+        cur = conn.cursor()
+        cur.execute(query)
+        rows = cur.fetchall()
+        conn.close()
+        print(f"[DEBUG] Query result: {rows}")
+        return rows
+    except Exception as e:
+        print(f"[DEBUG] Query error: {e}")
+        return []
 
 @app.route('/')
 def index():
@@ -259,7 +277,7 @@ def index():
         <h5>이름을 부르지 않으면 누구에게 말을 거는지 친구들이 모를 수도 있습니다!</h5>
         
         <div class="form-container">
-            <form method="POST" action="submit">
+            <form method="POST" action="/submit">
                 <label for="message">하고싶은 말:</label>
                 <input type="text" id="message" name="message" placeholder="여기에 메시지를 입력하세요...">
                 <button type="submit">✨ 전송 ✨</button>
@@ -661,4 +679,4 @@ def submit():
     ''')
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(debug=True)

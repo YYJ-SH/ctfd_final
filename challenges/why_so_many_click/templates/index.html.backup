@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>융보공여자대학교 에브리타임</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><a href="#">융보공여자대학교</a></h1>
+        </header>
+        <main>
+            <div class="board-title">
+                <h2>자유게시판</h2>
+            </div>
+            <article class="post">
+                <div class="post-header">
+                    <div class="author-info">
+                       
+                    </div>
+                    <h3>ㅇㅂㄱ 교수님 족보 구해요!</h3>
+                    <p class="post-time">07/22 10:30</p>
+                </div>
+                <div class="post-content">
+                    <p>제곧내</p>
+                </div>
+                <div class="post-actions">
+                    <button id="like-btn" class="like-btn">
+                        <img src="{{ 'static/images/heart.png' }}" alt="좋아요">
+                        <span id="like-count">87</span>
+                    </button>
+                    <span>댓글 13</span>
+                </div>
+            </article>
+
+            <section class="comments">
+                <div class="comment">
+                    <p><strong>익명1</strong> 엥? ㅇㅂㄱ 교수님 은퇴하신지 3년 넘었는디...? </p>
+                </div>
+                <div class="comment">
+                    <p><strong>익명2</strong> 여기에 하트 누른 애들 뭐냐 ㅋㅋ</p>
+                </div>
+                <div class="comment reply">
+                    <p><strong>익명3</strong> ㄴ 북마크해놓으려는것 같은데 ㅋㅋ </p>
+                </div>
+                <div class="comment reply">
+                    <p><strong>익명3</strong> ㄴ 잠만, 하트 누른 애들 누구누구인지 볼 수 있어? </p>
+                </div>
+                <div class="comment reply">
+                    <p><strong>익명1</strong> ㄴ PC모드에서 우클릭하면 가능할걸? </p>
+                </div>
+                <div class="comment reply">
+                    <p><strong>익명2</strong> ㄴ 놉. 못봄... 해보고서 말해</p>
+                </div>
+                <div class="comment">
+                    <p><strong>익명4</strong> 저 가지고 있어요! 난향관 9층에서 거래 가능하실까요?</p>
+                </div>
+                <div class="comment reply">
+                    <p><strong>익명2</strong> ㄴ 난향관 9층 없는데요? ㅋㅋ </p>
+                </div>
+                <div class="comment">
+                    <p><strong>익명 5</strong> 와 좋아요 개수 뭐야? 이딴글에 왤케많음? </p>
+                </div>
+        
+                <div class="comment">
+                    <p><strong>익명 7</strong> 이 교수님 PPT 숨은그림찾기라서 힘들었는데...벌써 PTSD온다.</p>
+                </div>
+                <div class="comment reply">
+                    <p><strong>익명2</strong> ㄴ 숨은그림찾기 다음에는 숨은문자열찾기였음....</p>
+                </div>
+                <div class="comment reply">
+                    <p><strong>익명5</strong> ㄴ ㅇㅈㅇㅈㅇㅈ 그것도 매번 맨 마지막에다가 쬑구맣게 넣어서 시험공부 앞쪽만 하고 가면 개망함.</p>
+                </div>
+                <div class="comment reply">
+                    <p><strong>익명2</strong> ㄴ 16진수문제는 왤케많이내셨던거임 진심</p>
+                </div>
+       
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const likeBtn = document.getElementById('like-btn');
+        const likeCount = document.getElementById('like-count');
+        let count = 0;
+        let liked = false;
+
+        likeBtn.addEventListener('click', () => {
+            if (!liked) {
+                count++;
+                liked = true;
+                likeBtn.classList.add('liked');
+            } else {
+                count--;
+                liked = false;
+                likeBtn.classList.remove('liked');
+            }
+            likeCount.innerText = count;
+        });
+    </script>
+</body>
+</html> 

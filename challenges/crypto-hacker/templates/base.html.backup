@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}YBG Security Network{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .matrix-bg {
+            background: linear-gradient(45deg, #0a0a0a, #1a1a1a);
+            position: relative;
+            min-height: 100vh;
+        }
+        .matrix-bg::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(1px 1px at 20px 30px, #00ff00, transparent),
+                radial-gradient(1px 1px at 40px 70px, #00ff00, transparent),
+                radial-gradient(1px 1px at 90px 40px, #00ff00, transparent);
+            background-repeat: repeat;
+            background-size: 100px 100px;
+            opacity: 0.1;
+            animation: matrix 20s linear infinite;
+            z-index: -1;
+        }
+        @keyframes matrix {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(100px); }
+        }
+        body {
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="matrix-bg text-green-400">
+    <div class="relative z-10 pb-8">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
