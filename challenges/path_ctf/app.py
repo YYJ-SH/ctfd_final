@@ -130,7 +130,7 @@ def index():
             <p class="subtitle">파일명을 입력해 조회하세요</p>
             
             <div class="search-form">
-                <form action="/files" method="get">
+                <form action="files" method="get">
                     <input type="text" name="name" placeholder="파일명 입력 (예: 공지사항.txt)" required>
                     <br>
                     <input type="submit" value="📁 파일 조회">

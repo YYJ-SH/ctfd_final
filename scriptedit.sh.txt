@@ -1,0 +1,27 @@
+#!/bin/bash
+
+echo "🔧 Flask/HTML 경로 자동 상대화 작업 시작!"
+
+TARGET_DIR="./challenges"
+
+find "$TARGET_DIR" -type f \( -name "*.py" -o -name "*.html" \) | while read -r file; do
+    echo "📄 수정 중: $file"
+
+    # 백업
+    cp "$file" "$file.bak"
+
+    # 정규식 기반 sed 수정
+    sed -i \
+        -E 's|href="/([^"]+)"|href="\1"|g' \
+        -E "s|href='/([^']+)'|href='\1'|g" \
+        -E 's|action="/([^"]+)"|action="\1"|g' \
+        -E "s|action='/([^']+)'|action='\1'|g" \
+        -E 's|src="/([^"]+\.png)"|src="\1"|g' \
+        -E "s|src='/([^']+\.png)'|src='\1'|g" \
+        -E "s|url_for\('static', filename='([^']+\.png)'\)|'static/\1'|g" \
+        "$file"
+
+    echo "✅ 완료!"
+done
+
+echo "🎉 모든 경로를 상대경로로 바꿨습니다!"

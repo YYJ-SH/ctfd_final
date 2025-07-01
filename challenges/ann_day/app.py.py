@@ -277,7 +277,7 @@ def index():
         <h5>이름을 부르지 않으면 누구에게 말을 거는지 친구들이 모를 수도 있습니다!</h5>
         
         <div class="form-container">
-            <form method="POST" action="/submit">
+            <form method="POST" action="submit">
                 <label for="message">하고싶은 말:</label>
                 <input type="text" id="message" name="message" placeholder="여기에 메시지를 입력하세요...">
                 <button type="submit">✨ 전송 ✨</button>

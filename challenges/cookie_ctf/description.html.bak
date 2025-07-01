@@ -9,7 +9,7 @@
     <p>Welcome to the Cookie Checker challenge!</p>
     <p>Only admin users are allowed to view the flag.</p>
     <p>Your task is to figure out how to become an admin by modifying your cookies.</p>
-    <p>Visit <a href="/flag">/flag</a> once you think you're an admin.</p>
+    <p>Visit <a href="flag">/flag</a> once you think you're an admin.</p>
     <hr>
     <p><strong>Hint:</strong> Check your browser's developer tools and inspect the cookies.</p>
 </body>

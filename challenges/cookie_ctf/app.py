@@ -15,7 +15,7 @@ def get_flag():
 def index():
     resp = make_response("""
         <h1>쿠키 확인기(Cookie Checker)에 오신 것을 환영합니다!</h1>
-        <p>오직 관리자만 플래그를 볼 수 있습니다. <a href='/flag'>/flag</a>에 접근해 보세요.</p>
+        <p>오직 관리자만 플래그를 볼 수 있습니다. <a href='flag'>/flag</a>에 접근해 보세요.</p>
     """)
     if not request.cookies.get("is_admin"):
         resp.set_cookie("is_admin", "False")
