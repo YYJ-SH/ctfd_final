@@ -21,6 +21,34 @@ class ScriptNameMiddleware:
 import sqlite3, random
 
 app = Flask(__name__)
+# 현재 앱의 base path 설정
+import os
+from urllib.parse import urljoin
+from flask import request
+
+def get_base_path():
+    """현재 앱의 base path 반환"""
+    return "/challenges/ann_day"
+
+def url_for_relative(endpoint):
+    """상대 경로 URL 생성"""
+    base = get_base_path()
+    if endpoint == "index" or endpoint == "/":
+        return base + "/"
+    elif endpoint.startswith("/"):
+        return base + endpoint
+    else:
+        return base + "/" + endpoint
+
+# 템플릿에서 사용할 수 있도록 context processor 추가
+@app.context_processor
+def inject_base_path():
+    return {
+        'base_path': get_base_path(),
+        'url_for_relative': url_for_relative
+    }
+
+
 
 # WSGI 미들웨어 적용
 app.wsgi_app = ScriptNameMiddleware(app.wsgi_app)
@@ -299,7 +327,7 @@ def index():
         <h5>이름을 부르지 않으면 누구에게 말을 거는지 친구들이 모를 수도 있습니다!</h5>
         
         <div class="form-container">
-            <form method="POST" action="/submit">
+            <form method="POST" action="{{ base_path }}/submit">
                 <label for="message">하고싶은 말:</label>
                 <input type="text" id="message" name="message" placeholder="여기에 메시지를 입력하세요...">
                 <button type="submit">✨ 전송 ✨</button>
@@ -418,7 +446,7 @@ def hint():
             <li>기억을 조작해서 특정 '단어'가 결과에 포함되게 만들 수 있다면…?</li>
         </ul>
 
-        <a href="/" class="back-button">🏠 돌아가기</a>
+        <a href="{{ base_path }}/" class="back-button">🏠 돌아가기</a>
     </div>
 </body>
 </html>

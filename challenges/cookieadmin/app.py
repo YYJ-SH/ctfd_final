@@ -21,6 +21,34 @@ class ScriptNameMiddleware:
 
 
 app = Flask(__name__)
+# 현재 앱의 base path 설정
+import os
+from urllib.parse import urljoin
+from flask import request
+
+def get_base_path():
+    """현재 앱의 base path 반환"""
+    return "/challenges/cookieadmin"
+
+def url_for_relative(endpoint):
+    """상대 경로 URL 생성"""
+    base = get_base_path()
+    if endpoint == "index" or endpoint == "/":
+        return base + "/"
+    elif endpoint.startswith("/"):
+        return base + endpoint
+    else:
+        return base + "/" + endpoint
+
+# 템플릿에서 사용할 수 있도록 context processor 추가
+@app.context_processor
+def inject_base_path():
+    return {
+        'base_path': get_base_path(),
+        'url_for_relative': url_for_relative
+    }
+
+
 
 # WSGI 미들웨어 적용
 app.wsgi_app = ScriptNameMiddleware(app.wsgi_app)

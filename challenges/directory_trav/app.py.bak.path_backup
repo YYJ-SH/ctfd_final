@@ -1,5 +1,6 @@
 import os
-from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
+import shutil
+from flask import Flask, request, render_template, redirect
 
 import os
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
@@ -21,47 +22,12 @@ class ScriptNameMiddleware:
 
 
 app = Flask(__name__)
-# 현재 앱의 base path 설정
-import os
-from urllib.parse import urljoin
-from flask import request
-
-def get_base_path():
-    """현재 앱의 base path 반환"""
-    return "/challenges/directory_trav"
-
-def url_for_relative(endpoint):
-    """상대 경로 URL 생성"""
-    base = get_base_path()
-    if endpoint == "index" or endpoint == "/":
-        return base + "/"
-    elif endpoint.startswith("/"):
-        return base + endpoint
-    else:
-        return base + "/" + endpoint
-
-# 템플릿에서 사용할 수 있도록 context processor 추가
-@app.context_processor
-def inject_base_path():
-    return {
-        'base_path': get_base_path(),
-        'url_for_relative': url_for_relative
-    }
-
-
 
 # WSGI 미들웨어 적용
 app.wsgi_app = ScriptNameMiddleware(app.wsgi_app)
 
-# 프로덕션 환경에서 APPLICATION_ROOT 설정
-if os.environ.get('FLASK_ENV') == 'production':
-    app.config['APPLICATION_ROOT'] = '/challenges/directory_trav'
-    app.config['PREFERRED_URL_SCHEME'] = 'http'
-
-# 기존 코드 유지하면서 static 경로 수정
-@app.route('/static/<path:filename>')
-def custom_static(filename):
-    return send_from_directory(app.static_folder, filename)
+UPLOAD_DIR = './uploads'
+FLAG_PATH = './flag.txt'
 
 @app.route('/')
 def index():

@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, jsonify, make_response, session
+import os
+from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
 
 import os
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
@@ -18,59 +19,21 @@ class ScriptNameMiddleware:
                 environ['PATH_INFO'] = path_info[len(script_name):]
         return self.app(environ, start_response)
 
-import base64
-import json
 
 app = Flask(__name__)
-# 현재 앱의 base path 설정
-import os
-from urllib.parse import urljoin
-from flask import request
-
-def get_base_path():
-    """현재 앱의 base path 반환"""
-    return "/challenges/crypto-hacker"
-
-def url_for_relative(endpoint):
-    """상대 경로 URL 생성"""
-    base = get_base_path()
-    if endpoint == "index" or endpoint == "/":
-        return base + "/"
-    elif endpoint.startswith("/"):
-        return base + endpoint
-    else:
-        return base + "/" + endpoint
-
-# 템플릿에서 사용할 수 있도록 context processor 추가
-@app.context_processor
-def inject_base_path():
-    return {
-        'base_path': get_base_path(),
-        'url_for_relative': url_for_relative
-    }
-
-
 
 # WSGI 미들웨어 적용
 app.wsgi_app = ScriptNameMiddleware(app.wsgi_app)
-app.secret_key = 'ctf_secret_key_2025'
 
-# 시저 암호 함수
-def caesar_cipher(text, shift):
-    result = ""
-    for char in text:
-        if char.isalpha():
-            ascii_offset = 65 if char.isupper() else 97
-            result += chr((ord(char) - ascii_offset + shift) % 26 + ascii_offset)
-        else:
-            result += char
-    return result
+# 프로덕션 환경에서 APPLICATION_ROOT 설정
+if os.environ.get('FLASK_ENV') == 'production':
+    app.config['APPLICATION_ROOT'] = '/challenges/crypto-hacker'
+    app.config['PREFERRED_URL_SCHEME'] = 'http'
 
-# 시저 암호로 인코딩된 메시지 (shift=3)
-encoded_message = caesar_cipher("BROWN HAIR, SHORT BOB HAIR, PURPLE CLOTHES, BLUE BACKGROUND, GIRL", 7)
-
-# Base64로 인코딩된 경로
-encoded_path = base64.b64encode("/agent-chatting".encode()).decode()
+# 기존 코드 유지하면서 static 경로 수정
+@app.route('/static/<path:filename>')
+def custom_static(filename):
+    return send_from_directory(app.static_folder, filename)
 
 @app.route('/')
 def index():
