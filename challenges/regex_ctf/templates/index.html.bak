@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Regex CTF</title>
+</head>
+<body>
+    <h2>🧩 정규표현식을 우회해 플래그를 제출하라</h2>
+    <p>다음 정규표현식을 만족하는 플래그만 제출 가능:</p>
+    <code>^YBG\{[A-Z]_[0-9]{4}_[a-f0-9]{6}\}$</code>
+
+    <form method="post">
+        <input type="text" name="flag" placeholder="YBG{...}" size="40">
+        <button type="submit">제출</button>
+    </form>
+
+    {% if result %}
+        <p><strong>{{ result }}</strong></p>
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,205 @@
+from flask import Flask, request, send_file, abort
+import os
+
+app = Flask(__name__)
+
+# 파일이 실제로 저장되는 디렉토리
+BASE_DIR = os.path.abspath("자료실/static/업무/메뉴얼")
+
+@app.route('/')
+def index():
+    return '''
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>사내 문서 열람 시스템</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: #f5f7fa;
+                margin: 0;
+                padding: 40px 20px;
+                min-height: 100vh;
+            }
+            .container {
+                background: white;
+                padding: 30px;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+                max-width: 800px;
+                margin: 0 auto;
+                border: 1px solid #e1e8ed;
+            }
+            h1 {
+                color: #2c3e50;
+                margin-bottom: 8px;
+                font-size: 1.8em;
+                font-weight: 600;
+                text-align: center;
+            }
+            .subtitle {
+                color: #7f8c8d;
+                margin-bottom: 25px;
+                font-size: 1em;
+                text-align: center;
+            }
+            .search-form {
+                margin: 25px 0;
+                text-align: center;
+                padding: 20px;
+                background: #fafbfc;
+                border-radius: 6px;
+                border: 1px solid #e1e8ed;
+            }
+            input[type="text"] {
+                width: 60%;
+                padding: 12px 15px;
+                border: 1px solid #d1d9e0;
+                border-radius: 4px;
+                font-size: 14px;
+                margin-bottom: 15px;
+            }
+            input[type="text"]:focus {
+                outline: none;
+                border-color: #4a90e2;
+                box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+            }
+            input[type="submit"] {
+                background: #4a90e2;
+                color: white;
+                border: none;
+                padding: 12px 25px;
+                border-radius: 4px;
+                font-size: 14px;
+                cursor: pointer;
+                font-weight: 500;
+            }
+            input[type="submit"]:hover {
+                background: #357abd;
+            }
+            .info-section {
+                background: white;
+                border: 1px solid #e1e8ed;
+                border-radius: 6px;
+                padding: 20px;
+                margin: 20px 0;
+            }
+            .info-title {
+                font-weight: 600;
+                color: #2c3e50;
+                margin-bottom: 15px;
+                font-size: 1.1em;
+                border-bottom: 1px solid #ecf0f1;
+                padding-bottom: 8px;
+            }
+            .file-list {
+                color: #34495e;
+                font-size: 0.9em;
+                line-height: 1.6;
+            }
+            .chat-message {
+                background: #f8f9fa;
+                border-radius: 6px;
+                padding: 15px;
+                margin: 10px 0;
+            }
+            .message {
+                margin: 12px 0;
+                padding: 10px 15px;
+                background: white;
+                border-radius: 4px;
+                border-left: 3px solid #4a90e2;
+                font-size: 0.9em;
+            }
+            .user {
+                font-weight: 600;
+                color: #2c3e50;
+            }
+            .time {
+                font-size: 0.8em;
+                color: #7f8c8d;
+                float: right;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🏢 사내 문서 열람 시스템</h1>
+            <p class="subtitle">파일명을 입력해 조회하세요</p>
+            
+            <div class="search-form">
+                <form action="/files" method="get">
+                    <input type="text" name="name" placeholder="파일명 입력 (예: 공지사항.txt)" required>
+                    <br>
+                    <input type="submit" value="📁 파일 조회">
+                </form>
+            </div>
+            
+            <div class="info-section">
+                <div class="info-title">📋 시스템 안내</div>
+                <div class="file-list">
+                    • 정확한 파일명을 입력해주세요<br>
+                    • 지원 형식: .txt, .pdf, .doc 등<br>
+                    • 최근 업데이트된 중요 문서들이 준비되어 있습니다
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <div class="info-title">💬 사내 채팅방 #문서관리팀</div>
+                <div class="chat-message">
+                    <div class="message">
+                        <span class="user">강서윤 부장</span>
+                        <span class="time">오후 2:30</span><br>
+                        중요한 건 오래된 기록이니까, 늘 위에 잘 숨겨둬야 해.
+                    </div>
+                    <div class="message">
+                        <span class="user">장유니 주임</span>
+                        <span class="time">오후 3:15</span><br>
+                        그거 다시 찾으려면 몇 단계나 올라가야 하던데요...ㅠㅠ
+                    </div>
+                    <div class="message">
+                        <span class="user">유예지 인턴</span>
+                        <span class="time">오후 3:18</span><br>
+                        그거 파일 경로가 너무 복잡해서 매번 헷갈려요 😅 상위 폴더를 계속 찾아 올라가야 하는 건가요?
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    '''
+
+@app.route('/files')
+def read_file():
+    filename = request.args.get("name", "")
+    filepath = os.path.abspath(os.path.join(BASE_DIR, filename))
+
+    try:
+        return send_file(filepath)
+    except FileNotFoundError:
+        return f'''
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial; padding: 50px; background: #f5f5f5; }}
+                .error {{ background: white; padding: 30px; border-radius: 10px; 
+                         box-shadow: 0 5px 15px rgba(0,0,0,0.1); }}
+            </style>
+        </head>
+        <body>
+            <div class="error">
+                <h2>❌ 파일을 찾을 수 없습니다</h2>
+                <p>경로: {filepath}</p>
+                <a href="/">← 돌아가기</a>
+            </div>
+        </body>
+        </html>
+        '''
+    except Exception as e:
+        return f"예외 발생: {str(e)}"
+
+
+if __name__ == '__main__':
+    app.run(debug=True)

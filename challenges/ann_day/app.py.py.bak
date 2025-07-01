@@ -284,7 +284,7 @@ def index():
             </form>
         </div>
         
-        <a href="hint" class="hint-link">💡 힌트 보기</a>
+        <a href="/hint" class="hint-link">💡 힌트 보기</a>
     </div>
 </body>
 </html>

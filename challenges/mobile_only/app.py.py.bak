@@ -1,0 +1,47 @@
+from flask import Flask, request
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Mobile Only</title>
+    </head>
+    <body>
+        <h2>모바일 사용자 전용 사이트입니다.</h2>
+        <!-- 관리자 페이지는 모바일에서만 접근 가능하다는 소문이 있습니다... -->
+        <p><a href='/admin'>관리자 페이지로 이동</a></p>
+    </body>
+    </html>
+    """
+
+@app.route('/admin')
+def admin():
+    ua = request.headers.get('User-Agent', '')
+    print(f"[LOG] 접속 User-Agent: {ua}")
+
+    if 'Mobile' not in ua:
+        return """
+        <h3>이 페이지는 모바일 브라우저에서만 접근할 수 있습니다.</h3>
+        <p>F12 → Device Mode 또는 curl로 시도해 보세요.</p>
+        """, 403
+
+    try:
+        with open('flag.txt') as f:
+            flag = f.read().strip()
+        return f"""
+        <h3>관리자 페이지에 오신 것을 환영합니다!</h3>
+        <p>FLAG: {flag}</p>
+        """
+    except FileNotFoundError:
+        return "<h3>FLAG 파일이 없습니다.</h3>", 500
+
+@app.route('/robots.txt')
+def robots():
+    return "User-agent: *\nDisallow: /admin", 200, {'Content-Type': 'text/plain'}
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8000, debug=True)
