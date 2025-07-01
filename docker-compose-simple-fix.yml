@@ -1,0 +1,331 @@
+version: '3.8'
+
+networks:
+  default:
+  internal:
+    internal: true
+  ctf-network:
+    driver: bridge
+
+volumes:
+  ctfd_logs:
+  ctfd_uploads:
+  mysql_data:
+  redis_data:
+
+services:
+  # CTFd (공식 설정 기반)
+  ctfd:
+    build: ./CTFd
+    user: root
+    restart: always
+    environment:
+      - UPLOAD_FOLDER=/var/uploads
+      - DATABASE_URL=mysql+pymysql://ctfd:ctfd@db/ctfd
+      - REDIS_URL=redis://cache:6379
+      - WORKERS=1
+      - LOG_FOLDER=/var/log/CTFd
+      - ACCESS_LOG=-
+      - ERROR_LOG=-
+      - REVERSE_PROXY=true
+      - SECRET_KEY=ctf_secret_key_2025_production
+      - SERVER_NAME=49.50.135.55
+    volumes:
+      - ctfd_logs:/var/log/CTFd
+      - ctfd_uploads:/var/uploads
+      - ./CTFd:/opt/CTFd:ro
+    depends_on:
+      - db
+      - cache
+    networks:
+      - default
+      - internal
+      - ctf-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ctfd.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.ctfd.priority=1"
+      - "traefik.http.services.ctfd.loadbalancer.server.port=8000"
+
+  # 데이터베이스 (CTFd 공식 설정)
+  db:
+    image: mariadb:10.11
+    restart: always
+    environment:
+      - MARIADB_ROOT_PASSWORD=ctfd_production_2025
+      - MARIADB_USER=ctfd
+      - MARIADB_PASSWORD=ctfd_production_2025
+      - MARIADB_DATABASE=ctfd
+      - MARIADB_AUTO_UPGRADE=1
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - internal
+    command: [mysqld, --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci, --wait_timeout=28800, --log-warnings=0]
+
+  # Redis (CTFd 공식 설정)
+  cache:
+    image: redis:4
+    restart: always
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+
+  # Traefik (웹 문제들 라우팅)
+  traefik:
+    image: traefik:v3.0
+    command:
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--log.level=WARN"
+      - "--accesslog=false"
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - ctf-network
+    restart: always
+
+  # 웹 문제들 (Flask 기반) - stripprefix 사용하지만 static 경로는 보존
+  web-ann-day:
+    build: 
+      context: ./challenges/ann_day
+      dockerfile: Dockerfile
+    networks:
+      - ctf-network
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      # 메인 애플리케이션 라우팅 (stripprefix 사용)
+      - "traefik.http.routers.ann-day.rule=PathPrefix(`/challenges/ann-day`)"
+      - "traefik.http.routers.ann-day.priority=100"
+      - "traefik.http.middlewares.ann-day-strip.stripprefix.prefixes=/challenges/ann-day"
+      - "traefik.http.routers.ann-day.middlewares=ann-day-strip"
+      - "traefik.http.services.ann-day.loadbalancer.server.port=5000"
+
+  web-base64:
+    build: 
+      context: ./challenges/base64
+      dockerfile: Dockerfile
+    networks:
+      - ctf-network
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.base64.rule=PathPrefix(`/challenges/base64`)"
+      - "traefik.http.routers.base64.priority=100"
+      - "traefik.http.middlewares.base64-strip.stripprefix.prefixes=/challenges/base64"
+      - "traefik.http.routers.base64.middlewares=base64-strip"
+      - "traefik.http.services.base64.loadbalancer.server.port=5000"
+
+  web-calculating-game:
+    build: 
+      context: ./challenges/calculating_game
+      dockerfile: Dockerfile
+    networks:
+      - ctf-network
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.calculating-game.rule=PathPrefix(`/challenges/calculating-game`)"
+      - "traefik.http.routers.calculating-game.priority=100"
+      - "traefik.http.middlewares.calculating-game-strip.stripprefix.prefixes=/challenges/calculating-game"
+      - "traefik.http.routers.calculating-game.middlewares=calculating-game-strip"
+      - "traefik.http.services.calculating-game.loadbalancer.server.port=80"
+
+  web-cookieadmin:
+    build: 
+      context: ./challenges/cookieadmin
+      dockerfile: Dockerfile
+    networks:
+      - ctf-network
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cookieadmin.rule=PathPrefix(`/challenges/cookieadmin`)"
+      - "traefik.http.routers.cookieadmin.priority=100"
+      - "traefik.http.middlewares.cookieadmin-strip.stripprefix.prefixes=/challenges/cookieadmin"
+      - "traefik.http.routers.cookieadmin.middlewares=cookieadmin-strip"
+      - "traefik.http.services.cookieadmin.loadbalancer.server.port=5000"
+
+  web-cookie-ctf:
+    build: 
+      context: ./challenges/cookie_ctf
+      dockerfile: Dockerfile
+    networks:
+      - ctf-network
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cookie-ctf.rule=PathPrefix(`/challenges/cookie-ctf`)"
+      - "traefik.http.routers.cookie-ctf.priority=100"
+      - "traefik.http.middlewares.cookie-ctf-strip.stripprefix.prefixes=/challenges/cookie-ctf"
+      - "traefik.http.routers.cookie-ctf.middlewares=cookie-ctf-strip"
+      - "traefik.http.services.cookie-ctf.loadbalancer.server.port=5000"
+
+  web-directory-trav:
+    build: 
+      context: ./challenges/directory_trav
+      dockerfile: Dockerfile
+    networks:
+      - ctf-network
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.directory-trav.rule=PathPrefix(`/challenges/directory-trav`)"
+      - "traefik.http.routers.directory-trav.priority=100"
+      - "traefik.http.middlewares.directory-trav-strip.stripprefix.prefixes=/challenges/directory-trav"
+      - "traefik.http.routers.directory-trav.middlewares=directory-trav-strip"
+      - "traefik.http.services.directory-trav.loadbalancer.server.port=5000"
+
+  web-hidden-images:
+    build: 
+      context: ./challenges/hidden_images
+      dockerfile: Dockerfile
+    networks:
+      - ctf-network
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hidden-images.rule=PathPrefix(`/challenges/hidden-images`)"
+      - "traefik.http.routers.hidden-images.priority=100"
+      - "traefik.http.middlewares.hidden-images-strip.stripprefix.prefixes=/challenges/hidden-images"
+      - "traefik.http.routers.hidden-images.middlewares=hidden-images-strip"
+      - "traefik.http.services.hidden-images.loadbalancer.server.port=5000"
+
+  web-mobile-only:
+    build: 
+      context: ./challenges/mobile_only
+      dockerfile: Dockerfile
+    networks:
+      - ctf-network
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mobile-only.rule=PathPrefix(`/challenges/mobile-only`)"
+      - "traefik.http.routers.mobile-only.priority=100"
+      - "traefik.http.middlewares.mobile-only-strip.stripprefix.prefixes=/challenges/mobile-only"
+      - "traefik.http.routers.mobile-only.middlewares=mobile-only-strip"
+      - "traefik.http.services.mobile-only.loadbalancer.server.port=5000"
+
+  web-path-ctf:
+    build: 
+      context: ./challenges/path_ctf
+      dockerfile: Dockerfile
+    networks:
+      - ctf-network
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.path-ctf.rule=PathPrefix(`/challenges/path-ctf`)"
+      - "traefik.http.routers.path-ctf.priority=100"
+      - "traefik.http.middlewares.path-ctf-strip.stripprefix.prefixes=/challenges/path-ctf"
+      - "traefik.http.routers.path-ctf.middlewares=path-ctf-strip"
+      - "traefik.http.services.path-ctf.loadbalancer.server.port=5000"
+
+  web-regex-ctf:
+    build: 
+      context: ./challenges/regex_ctf
+      dockerfile: Dockerfile
+    networks:
+      - ctf-network
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.regex-ctf.rule=PathPrefix(`/challenges/regex-ctf`)"
+      - "traefik.http.routers.regex-ctf.priority=100"
+      - "traefik.http.middlewares.regex-ctf-strip.stripprefix.prefixes=/challenges/regex-ctf"
+      - "traefik.http.routers.regex-ctf.middlewares=regex-ctf-strip"
+      - "traefik.http.services.regex-ctf.loadbalancer.server.port=5000"
+
+  web-why-so-many-click:
+    build: 
+      context: ./challenges/why_so_many_click
+      dockerfile: Dockerfile
+    networks:
+      - ctf-network
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.why-so-many-click.rule=PathPrefix(`/challenges/why-so-many-click`)"
+      - "traefik.http.routers.why-so-many-click.priority=100"
+      - "traefik.http.middlewares.why-so-many-click-strip.stripprefix.prefixes=/challenges/why-so-many-click"
+      - "traefik.http.routers.why-so-many-click.middlewares=why-so-many-click-strip"
+      - "traefik.http.services.why-so-many-click.loadbalancer.server.port=5000"
+
+  # DMCP 서비스들 (SSE 통신)
+  dmcp-9001:
+    build: 
+      context: ./damn-vulnerable-MCP-server
+      dockerfile: Dockerfile
+    networks:
+      - ctf-network
+    restart: always
+    environment:
+      - SERVICE_NAME=dmcp-9001
+      - PORT=9001
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dmcp-9001.rule=PathPrefix(`/challenges/dmcp-9001`)"
+      - "traefik.http.routers.dmcp-9001.priority=100"
+      - "traefik.http.middlewares.dmcp-9001-strip.stripprefix.prefixes=/challenges/dmcp-9001"
+      - "traefik.http.routers.dmcp-9001.middlewares=dmcp-9001-strip"
+      - "traefik.http.services.dmcp-9001.loadbalancer.server.port=9001"
+
+  dmcp-9002:
+    build: 
+      context: ./damn-vulnerable-MCP-server
+      dockerfile: Dockerfile
+    networks:
+      - ctf-network
+    restart: always
+    environment:
+      - SERVICE_NAME=dmcp-9002
+      - PORT=9002
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dmcp-9002.rule=PathPrefix(`/challenges/dmcp-9002`)"
+      - "traefik.http.routers.dmcp-9002.priority=100"
+      - "traefik.http.middlewares.dmcp-9002-strip.stripprefix.prefixes=/challenges/dmcp-9002"
+      - "traefik.http.routers.dmcp-9002.middlewares=dmcp-9002-strip"
+      - "traefik.http.services.dmcp-9002.loadbalancer.server.port=9002"
+
+  dmcp-9006:
+    build: 
+      context: ./damn-vulnerable-MCP-server
+      dockerfile: Dockerfile
+    networks:
+      - ctf-network
+    restart: always
+    environment:
+      - SERVICE_NAME=dmcp-9006
+      - PORT=9006
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dmcp-9006.rule=PathPrefix(`/challenges/dmcp-9006`)"
+      - "traefik.http.routers.dmcp-9006.priority=100"
+      - "traefik.http.middlewares.dmcp-9006-strip.stripprefix.prefixes=/challenges/dmcp-9006"
+      - "traefik.http.routers.dmcp-9006.middlewares=dmcp-9006-strip"
+      - "traefik.http.services.dmcp-9006.loadbalancer.server.port=9006"
+
+  dmcp-9007:
+    build: 
+      context: ./damn-vulnerable-MCP-server
+      dockerfile: Dockerfile
+    networks:
+      - ctf-network
+    restart: always
+    environment:
+      - SERVICE_NAME=dmcp-9007
+      - PORT=9007
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dmcp-9007.rule=PathPrefix(`/challenges/dmcp-9007`)"
+      - "traefik.http.routers.dmcp-9007.priority=100"
+      - "traefik.http.middlewares.dmcp-9007-strip.stripprefix.prefixes=/challenges/dmcp-9007"
+      - "traefik.http.routers.dmcp-9007.middlewares=dmcp-9007-strip"
+      - "traefik.http.services.dmcp-9007.loadbalancer.server.port=9007"
